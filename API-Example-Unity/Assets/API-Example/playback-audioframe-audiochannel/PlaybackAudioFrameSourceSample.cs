@@ -13,6 +13,7 @@ namespace CustomAudioSink
         [SerializeField] private string TOKEN = "";
 
         [SerializeField] private string CHANNEL_NAME = "YOUR_CHANNEL_NAME";
+
         public Text logText;
         private Logger logger;
         private IRtcEngine mRtcEngine = null;
@@ -33,6 +34,10 @@ namespace CustomAudioSink
         
         private bool _startSignal;
 
+        [SerializeField] private int homeChannel = 0;
+        private const int channelCount = 2;
+        private AgoraChannel[] channels = new AgoraChannel[channelCount];
+
         // Start is called before the first frame update
         void Start()
         {
@@ -40,8 +45,21 @@ namespace CustomAudioSink
             if (!appIdOK) return;
 
             InitRtcEngine();
-            JoinChannel();
+            // XXX
+            // mRtcEngine.AdjustPlaybackSignalVolume(0);
+            mRtcEngine.SetAudioProfile(AUDIO_PROFILE_TYPE.AUDIO_PROFILE_MUSIC_STANDARD,
+                AUDIO_SCENARIO_TYPE.AUDIO_SCENARIO_CHATROOM_GAMING);
+            // JoinChannel();
 
+            channels[homeChannel] = mRtcEngine.CreateChannel(CHANNEL_NAME + homeChannel.ToString());
+            channels[homeChannel].SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER);
+
+            int otherChannel = (homeChannel + 1) % channelCount;
+            channels[otherChannel] = mRtcEngine.CreateChannel(CHANNEL_NAME + otherChannel.ToString());
+            channels[otherChannel].SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER);
+            
+            channels[homeChannel].JoinChannel("", null, (uint) homeChannel, new ChannelMediaOptions(true, true));
+            
             var aud = GetComponent<AudioSource>();
             if (aud == null)
             {
@@ -79,23 +97,25 @@ namespace CustomAudioSink
             mRtcEngine.OnConnectionLost += OnConnectionLostHandler;
         }
 
-        void JoinChannel()
-        {
-            mRtcEngine.JoinChannelByKey(TOKEN, CHANNEL_NAME, "", 0);
-        }
+        // void JoinChannel()
+        // {
+        //     mRtcEngine.JoinChannelByKey(TOKEN, CHANNEL_NAME, "", 0);
+        // }
 
         void SetupAudio(AudioSource aud, string clipName)
         {
             _audioRawDataManager = AudioRawDataManager.GetInstance(mRtcEngine);
             Debug.Assert(_audioRawDataManager.RegisterAudioRawDataObserver() == 0, "Error registering audio rawdata observer!");
             mRtcEngine.SetParameter("che.audio.external_render", true);
+            mRtcEngine.SetExternalAudioSource(true, 48000, 1);
+            mRtcEngine.SetExternalAudioSink(true, 48000, 1);
 
-            var bufferLength = SAMPLE_RATE / PULL_FREQ_PER_SEC * CHANNEL * 1000; // 10-sec-length buffer
+            var bufferLength = 48000 / PULL_FREQ_PER_SEC * CHANNEL * 1000; // 10-sec-length buffer
             audioBuffer = new RingBuffer<float>(bufferLength);
             
             _audioClip = AudioClip.Create(clipName,
                 CLIP_SAMPLES,
-		        CHANNEL, SAMPLE_RATE, true,
+		        CHANNEL, 48000, true,
                 OnAudioRead);
             aud.clip = _audioClip;
             aud.loop = true;
