@@ -47,18 +47,18 @@ namespace CustomAudioSink
             InitRtcEngine();
             // XXX
             // mRtcEngine.AdjustPlaybackSignalVolume(0);
-            mRtcEngine.SetAudioProfile(AUDIO_PROFILE_TYPE.AUDIO_PROFILE_MUSIC_STANDARD,
-                AUDIO_SCENARIO_TYPE.AUDIO_SCENARIO_CHATROOM_GAMING);
-            // JoinChannel();
+            // mRtcEngine.SetAudioProfile(AUDIO_PROFILE_TYPE.AUDIO_PROFILE_MUSIC_STANDARD,
+            //     AUDIO_SCENARIO_TYPE.AUDIO_SCENARIO_CHATROOM_GAMING);
+            JoinChannel();
 
-            channels[homeChannel] = mRtcEngine.CreateChannel(CHANNEL_NAME + homeChannel.ToString());
-            channels[homeChannel].SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER);
-
-            int otherChannel = (homeChannel + 1) % channelCount;
-            channels[otherChannel] = mRtcEngine.CreateChannel(CHANNEL_NAME + otherChannel.ToString());
-            channels[otherChannel].SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER);
-            
-            channels[homeChannel].JoinChannel("", null, (uint) homeChannel, new ChannelMediaOptions(true, true));
+            // channels[homeChannel] = mRtcEngine.CreateChannel(CHANNEL_NAME + homeChannel.ToString());
+            // channels[homeChannel].SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER);
+            //
+            // int otherChannel = (homeChannel + 1) % channelCount;
+            // channels[otherChannel] = mRtcEngine.CreateChannel(CHANNEL_NAME + otherChannel.ToString());
+            // channels[otherChannel].SetClientRole(CLIENT_ROLE_TYPE.CLIENT_ROLE_BROADCASTER);
+            //
+            // channels[homeChannel].JoinChannel("", null, (uint) homeChannel, new ChannelMediaOptions(true, true));
             
             var aud = GetComponent<AudioSource>();
             if (aud == null)
@@ -97,10 +97,10 @@ namespace CustomAudioSink
             mRtcEngine.OnConnectionLost += OnConnectionLostHandler;
         }
 
-        // void JoinChannel()
-        // {
-        //     mRtcEngine.JoinChannelByKey(TOKEN, CHANNEL_NAME, "", 0);
-        // }
+        void JoinChannel()
+        {
+            mRtcEngine.JoinChannelByKey(TOKEN, CHANNEL_NAME, "", 0);
+        }
 
         void SetupAudio(AudioSource aud, string clipName)
         {
@@ -110,12 +110,12 @@ namespace CustomAudioSink
             mRtcEngine.SetExternalAudioSource(true, 48000, 1);
             mRtcEngine.SetExternalAudioSink(true, 48000, 1);
 
-            var bufferLength = 48000 / PULL_FREQ_PER_SEC * CHANNEL * 1000; // 10-sec-length buffer
+            var bufferLength = 32000 / PULL_FREQ_PER_SEC * CHANNEL * 1000; // 10-sec-length buffer
             audioBuffer = new RingBuffer<float>(bufferLength);
             
             _audioClip = AudioClip.Create(clipName,
                 CLIP_SAMPLES,
-		        CHANNEL, 48000, true,
+		        CHANNEL, 32000, true,
                 OnAudioRead);
             aud.clip = _audioClip;
             aud.loop = true;
